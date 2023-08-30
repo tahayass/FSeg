@@ -1,0 +1,3 @@
+# Initial dataset
+For initial testing we are going to use UECFoodPixComplete for food area segmentation. the data can be annotated to be used for plate detection.
+UECFoodPixComplete are food images dataset with segmentation masks including 9,000 images for training and 1,000 image for testing. The Segmentation masks are augmented by food category. In UECFoodPix, the mask images is created using a bounding box and GrabCut, and In UECFoodPixComplete there is provided manualy.The mask images have pixel-wise food 103 class labels, and only R(red) channel have this labels.See Labels below for the correspondence between mask labels and pixel values.

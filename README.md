@@ -1,7 +1,5 @@
 # FoodMetrics
 
-Short description of your project.
-
 ## Table of Contents
 
 - [Description](#description)

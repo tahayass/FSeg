@@ -171,7 +171,12 @@ def run(
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        annotator.box_label(xyxy, label, color=colors(c, True))
+                        #annotator.box_label(xyxy, label, color=colors(c, True))
+                        x1, y1, x2, y2 = map(int, xyxy)
+                        cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+                        w, h = x2 - x1, y2 - y1
+                        cv2.ellipse(im0, (cx, cy), (w // 2, h // 2), 0, 0, 360, color=colors(c, True), thickness=line_thickness)
+
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 

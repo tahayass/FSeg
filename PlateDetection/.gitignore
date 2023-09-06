@@ -24,6 +24,7 @@
 !cfg/yolov3*.cfg
 
 storage.googleapis.com
+FSeg-1/
 #runs/*
 data/*
 data/images/*

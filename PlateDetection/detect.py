@@ -172,6 +172,7 @@ def run(
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         #annotator.box_label(xyxy, label, color=colors(c, True))
+                        # detect the circle
                         x1, y1, x2, y2 = map(int, xyxy)
                         cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
                         w, h = x2 - x1, y2 - y1

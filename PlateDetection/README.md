@@ -30,7 +30,10 @@ python detect.py --weights ./runs/train/weights/best.pt --source ./test_images/
 
 ## Results
 
-The results from the training process can be found in the `val/exp` directory.
+The results from the training process:
+- precision : 0.996 
+- Recall : 1
+- mAP50 : 0951
 
 ---
 

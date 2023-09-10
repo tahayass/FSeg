@@ -25,7 +25,7 @@ python detect.py --weights ./runs/train/weights/best.pt --source "path_to_your_t
 Replace `path_to_your_test_images` with the path to your test images. For example:
 
 ```
-python detect.py --weights ./runs/train/weights/best.pt --source ./test_images/
+python detect_plate.py --weights ./runs/train/weights/best.pt --source ./test_images/
 ```
 
 ## Results

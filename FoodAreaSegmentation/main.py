@@ -103,4 +103,4 @@ if __name__=='__main__':
 
     coco_dataset_path = r'.\Data\combined_dataset\test'
 
-    GenerateMasksForDataset(coco_dataset_path,dataset_name='combined dataset open & close',max_images=8,close=True,open=True)
+    GenerateMasksForDataset(coco_dataset_path,dataset_name='test with boxes and points and postprocessing',max_images=8,open=True,close=True)

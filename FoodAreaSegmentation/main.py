@@ -84,7 +84,7 @@ def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False):
                 mask[0] = close_mask(np.array(mask[0]*1,dtype=np.uint8))
                 masks.append(mask)
             elif open and close:
-                mask[0] = close_mask(close_mask(np.array(mask[0]*1,dtype=np.uint8)))
+                mask[0] = open_mask(close_mask(np.array(mask[0]*1,dtype=np.uint8)))
                 masks.append(mask)
             else:
                 masks.append(mask)
@@ -101,6 +101,6 @@ if __name__=='__main__':
     MODEL_TYPE = "vit_h"
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    coco_dataset_path = r'.\Data\Potato Pancake.v2i.coco\test'
+    coco_dataset_path = r'.\Data\combined_dataset\test'
 
-    GenerateMasksForDataset(coco_dataset_path,dataset_name='test new dataset open',max_images=5,close=True)
+    GenerateMasksForDataset(coco_dataset_path,dataset_name='combined dataset open & close',max_images=8,close=True,open=True)

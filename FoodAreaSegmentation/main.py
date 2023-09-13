@@ -49,7 +49,7 @@ def GenerateMasksForDataset(coco_dataset_path,dataset_name='',max_images=30,open
         plt.savefig(os.path.join(experiment_path,f'{id}.jpg'))
 
 
-def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False):
+def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False,kernel_size=None):
 
     masks=[]
     #Loading SAM predictor
@@ -78,13 +78,13 @@ def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False):
             input_bbox = np.array(format_bbox(bounding_boxes[i]['bbox']))
             mask = GenerateMask(sam_predictor,input_box=input_bbox)
             if open and not(close):
-                mask[0] = open_mask(np.array(mask[0]*1,dtype=np.uint8))
+                mask[0] = open_mask(np.array(mask[0]*1,dtype=np.uint8),kernel_size=kernel_size)
                 masks.append(mask)
             elif close and not(open):
-                mask[0] = close_mask(np.array(mask[0]*1,dtype=np.uint8))
+                mask[0] = close_mask(np.array(mask[0]*1,dtype=np.uint8),kernel_size=kernel_size)
                 masks.append(mask)
             elif open and close:
-                mask[0] = open_mask(close_mask(np.array(mask[0]*1,dtype=np.uint8)))
+                mask[0] = open_mask(close_mask(np.array(mask[0]*1,dtype=np.uint8),kernel_size=kernel_size))
                 masks.append(mask)
             else:
                 masks.append(mask)
@@ -103,4 +103,10 @@ if __name__=='__main__':
 
     coco_dataset_path = r'.\Data\combined_dataset\test'
 
-    GenerateMasksForDataset(coco_dataset_path,dataset_name='test with boxes and points and postprocessing',max_images=8,open=True,close=True)
+    GenerateMasksForDataset(coco_dataset_path,
+                            dataset_name='test with boxes and points and postprocessing',
+                            max_images=8,
+                            open=True,
+                            close=True,
+                            kernel_size=(10,10)
+                            )

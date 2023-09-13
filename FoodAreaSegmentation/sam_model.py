@@ -27,7 +27,7 @@ def LoadSAMPredictor(sam_checkpoint, model_type, device='cuda'):
     return predictor
 
 
-def GenerateMask(predictor, input_box):
+def GenerateMask(predictor, input_box, include_point=True):
     """
     Generate segmentation masks for a given input bounding box using a SAM predictor.
 
@@ -38,11 +38,16 @@ def GenerateMask(predictor, input_box):
     Returns:
     - masks (numpy array): A segmentation mask representing the predicted object(s) within the input bounding box.
     """
-    point_coords = np.array([[(input_box[0]+input_box[2])/2,(input_box[1]+input_box[3])/2]])
+    if include_point:
+        point_coords = np.array([[(input_box[0]+input_box[2])/2,(input_box[1]+input_box[3])/2]])
+        point_labels=np.array([1]) #label 0 is for background and label 1 is for foreground
+    else: 
+        point_coords = None
+        point_labels = None
 
     masks, _, _ = predictor.predict(
         point_coords=point_coords,
-        point_labels=np.array([1]),  #label 0 is for background and label 1 is for foreground
+        point_labels=point_labels,  
         box=input_box[None, :],
         multimask_output=False,
     )

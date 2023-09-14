@@ -9,18 +9,105 @@ test: ""     # val images (relative to 'path')
 
 # Classes
 names:
-  0: food1
-  1: food2
-  2: food3
-  3: food4
-  4: food5
-  5: food6
-  6: food7
-  7: food8
-  8: food9
-  9: food10 
-  10: food11
-  11: food12
-  12: food13
-  
+  0: Leaf Mustard Kimchi
+  1: Radish kimchi
+  2: Julienne Radish Fresh Salad
+  3: Kimchi
+  4: White Kimchi
+  5: Chive Kimchi
+  6: Potato Pancake
+  7: Cucumber Kimchi
+  8: Whole Radish Kimchi
+  9: Pickled Perilla Leaf
+  10: Braised Beans
+  11: Stir-fried Eggplant
+  12: Bracken Salad
+  13: Stir-fried Seaweed Stems
+  14: Mung Bean Sprout Salad
+  15: Spinach Salad
+  16: Stir-fried Zucchini
+  17: Stir-fried Shishito Peppers
+  18: seasoned balloon flower roots
+  19: Acorn Jelly Salad
+  20: Bean Sprout Salad
+  21: Stir-fried Potatoes
+  22: Eoyonam's Stir-fried dried squid with Red Chili Paste
+  23: Stir-fried Rice Cake (non noodle)
+  24: Stir-fried Rice Cake
+  25: Rice Cake Skewers
+  26: Kimchi Pancake
+  27: Green Onion Pancake
+  28: Pan-fried Battered Zucchini
+  29: Braised Potatoes
+  30: Braised Bean Curd
+  31: Braised Peanuts
+  32: Braised Lotus Roots
+  33: Braised Burdock Roots
+  34: stewed kimchi
+  35: Fried pepper paste
+  36: Grilled Deodeok
+  37: Stir-fried Glass Noodles and Vegetables
+  38: Grilled Ribs
+  39: Grilled Cutlassfish
+  40: Grilled Mackerel
+  41: Grilled Beef TripeGrilled Pork Tripe
+  42: Spicy Stir-fried Chicken
+  43: Grilled Short Rib Patties
+  44: Bulgogi
+  45: Grilled Pork Belly
+  46: Grilled Eel
+  47: Grilled Clams
+  48: grilled yellow corvina
+  49: smoked duck
+  50: Half-dried Saury
+  51: Seasoned Fried Chicken
+  52: boiled meat slices
+  53: Pizza
+  54: Fried Chicken
+  55: spicy skate salad
+  56: stir-fried dried shrimp
+  57: Stir-fried Dried Anchovies
+  58: stir-fried sausage
+  59: stir-fried fish cake
+  60: stir-fried ocellated octopus
+  61: soy-marinated crab
+  62: spicy marinated crab
+  63: omelet roll
+  64: Fried egg
+  65: Meat Fritters
+  66: batter-fried fish fillets
+  67: Braised Cutlassfish
+  68: Braised Mackerel
+  69: Braised Beef in Soy Sauce
+  70: Braised Quail Eggs in Soy Sauce
+  71: Braised Half-dried Pollack
+  72: Braised Short Ribs
+  73: Steamed Eggs
+  74: steamed cockles
+  75: boiled pork slices
+  76: Blood Sausage
+  77: Braised Pigs' Feet
+  78: Braised Chicken
+  79: Spicy Braised Seafood
+  80: deep-fried shrimp
+  81: Deep-fried Squid 
+  82: Sea Pineapple
+  83: Live Octopus
+  84: Beef Tartare
+  85: Sweet Rice Balls
+  86: Half-moon Rice Cake
+  87: Gimbap
+  88: Kimchi Fried Rice
+  89: Scorched Rice
+  90: Bibimbap
+  91: shrimp fried rice
+  92: Fish Roe Rice
+  93: fried tofu rice balls
+  94: steamed assorted grains and rice
+  95: rice ball
+  96: Abalone Porridge
+  97: Pumpkin Porridge
+  98: traditional Korean sweets
+  99: honey-filled rice cake
+    
 

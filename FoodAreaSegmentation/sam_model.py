@@ -55,13 +55,13 @@ def GenerateMask(predictor, input_box, include_point=True):
         point_coords = None
         point_labels = None
 
-    masks, _, _ = predictor.predict(
+    masks, iou, _ = predictor.predict(
         point_coords=point_coords,
         point_labels=point_labels,  
         box=input_box[None, :],
         multimask_output=False,
     )
-    return masks
+    return masks, iou
 
 
 def GenerateMaskBatch(sam, images, input_boxes, include_point=True):

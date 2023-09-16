@@ -17,7 +17,7 @@ def format_bbox(input_bbox):
 
 
 
-def GenerateMasksForDataset(coco_dataset_path,dataset_name='',max_images=30,open=False,close=False):
+def GenerateMasksForDataset(coco_dataset_path,dataset_name='',max_images=30,open=False,close=False,kernel_size=(10,10)):
 
     experiment_path = os.path.join('.','FoodAreaSegmentation','experiments',dataset_name)
 
@@ -38,14 +38,18 @@ def GenerateMasksForDataset(coco_dataset_path,dataset_name='',max_images=30,open
         image = cv2.imread(os.path.join(coco_dataset_path,get_image_info(coco, id)['file_name']))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        masks = GenerateMaskForImage(image, bounding_boxes=image_annotation[id],open=open,close=close)
+        masks, iou_predictions = GenerateMaskForImage(image,
+                                                      bounding_boxes=image_annotation[id],
+                                                      open=open,
+                                                      close=close,
+                                                      kernel_size=kernel_size)
 
         plt.figure(figsize=(10, 10))
         plt.imshow(image)
         for i,mask in enumerate(masks):
             show_mask(mask[0], plt.gca())
             category_name = image_annotation[id][i]['category_name']
-            show_box(format_bbox(image_annotation[id][i]['bbox']), plt.gca(),category_name=category_name)
+            show_box(format_bbox(image_annotation[id][i]['bbox']),iou_predictions[i][0], plt.gca(),category_name=category_name)
         plt.savefig(os.path.join(experiment_path,f'{id}.jpg'))
 
 
@@ -58,10 +62,13 @@ def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False,kernel_
     #Create SAM embeddings for the image
     sam_predictor.set_image(image)
 
+    iou_predictions = []
+
     #Generate mask
     if len(bounding_boxes) == 1 :
         input_bbox = np.array(format_bbox(bounding_boxes[0]['bbox']))
-        mask = GenerateMask(sam_predictor,input_box=input_bbox)
+        mask, iou = GenerateMask(sam_predictor,input_box=input_bbox)
+        iou_predictions.append(iou)
         if open and not(close):
             mask[0] = open_mask(np.array(mask[0]*1,dtype=np.uint8))
             masks.append(mask)
@@ -76,7 +83,8 @@ def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False,kernel_
     elif len(bounding_boxes) > 1 :
         for i in range(len(bounding_boxes)):
             input_bbox = np.array(format_bbox(bounding_boxes[i]['bbox']))
-            mask = GenerateMask(sam_predictor,input_box=input_bbox)
+            mask, iou = GenerateMask(sam_predictor,input_box=input_bbox)
+            iou_predictions.append(iou)
             if open and not(close):
                 mask[0] = open_mask(np.array(mask[0]*1,dtype=np.uint8),kernel_size=kernel_size)
                 masks.append(mask)
@@ -89,7 +97,7 @@ def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False,kernel_
             else:
                 masks.append(mask)
 
-    return masks
+    return masks,iou_predictions
 
 
 

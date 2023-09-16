@@ -1,14 +1,15 @@
 from segment_anything import sam_model_registry, SamPredictor
+from segment_anything.utils.transforms import ResizeLongestSide
 
 import numpy as np
-
+import torch
 
 
 def downloadSAMModel():
     return None
 
 
-def LoadSAMPredictor(sam_checkpoint, model_type, device='cuda'):
+def LoadSAMPredictor(sam_checkpoint, model_type, device='cuda', return_sam=False):
     """
     Load a Segment Anything Model (SAM) predictor model for semantic segmentation.
 
@@ -24,7 +25,16 @@ def LoadSAMPredictor(sam_checkpoint, model_type, device='cuda'):
     sam.to(device=device)
     predictor = SamPredictor(sam)
 
-    return predictor
+    if return_sam :
+        return predictor,sam
+    else : 
+        return predictor
+
+
+def prepare_image(image, transform, device):
+    image = transform.apply_image(image)
+    image = torch.as_tensor(image, device=device.device) 
+    return image.permute(2, 0, 1).contiguous()
 
 
 def GenerateMask(predictor, input_box, include_point=True):
@@ -52,6 +62,30 @@ def GenerateMask(predictor, input_box, include_point=True):
         multimask_output=False,
     )
     return masks
+
+
+def GenerateMaskBatch(sam, images, input_boxes, include_point=True):
+
+    for i in range(len(input_boxes)):
+        input_boxes[i] = torch.tensor(input_boxes[i], device=sam.device)
+
+    resize_transform = ResizeLongestSide(sam.image_encoder.img_size)
+    batched_input = [
+     {
+         'image': prepare_image(images[0], resize_transform, sam),
+         'boxes': resize_transform.apply_boxes_torch(input_boxes[0], images[0].shape[:2]),
+         'original_size': images[0].shape[:2]
+     },
+     {
+         'image': prepare_image(images[1], resize_transform, sam),
+         'boxes': resize_transform.apply_boxes_torch(input_boxes[0], input_boxes[0].shape[:2]),
+         'original_size': input_boxes[0].shape[:2]
+     }
+    ]
+
+    batched_output = sam(batched_input, multimask_output=False)
+
+    return batched_output
 
 
 

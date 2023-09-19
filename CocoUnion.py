@@ -62,6 +62,8 @@ def merge_datasets(input_dirs, output_dir):
 
     image_id_counter = 0
     annotation_id_counter = 0
+    category_names=[]
+    old_id=0
 
     for input_dir in input_dirs:
         annotation_file = os.path.join(input_dir,"_annotations.coco.json")
@@ -69,11 +71,14 @@ def merge_datasets(input_dirs, output_dir):
             dataset = json.load(f)
         # Update category IDs and add them to the merged dataset
         for category in dataset["categories"]:
-            category_id_mapping[category["id"]] = len(merged_coco["categories"]) + 1
-            category["id"] = len(merged_coco["categories"]) + 1
-            merged_coco["categories"].append(category)
-        
+            if (category["name"] in category_names)==False:
+                merged_coco["categories"].append(category)
+                category_id_mapping[category["id"]] = len(merged_coco["categories"]) + 1
+                category["id"] = old_id 
+                category_names.append(category["name"])
+                old_id += 1
 
+    
     for input_dir in input_dirs:
         # Load the COCO annotation file
         annotation_file = os.path.join(input_dir,"_annotations.coco.json")
@@ -82,7 +87,6 @@ def merge_datasets(input_dirs, output_dir):
             dataset = json.load(f)
 
         original_categories = dataset["categories"]
-        print(original_categories)
 
         for image in dataset["images"]:
                 
@@ -124,8 +128,12 @@ def merge_datasets(input_dirs, output_dir):
 if __name__ == "__main__":
 
     input_dirs = [r".\Data\Potato Pancake.v2i.coco",
-    r".\Data\Leaf Mustard Kimchi, Radish kimchi, Julienne Radish Fresh Salad, Kimchi, White Kimchi, Chive Kimchi.v1i.coco"]
-    output_dir = ".\Data\combined_dataset"
+    r".\Data\Leaf Mustard Kimchi, Radish kimchi, Julienne Radish Fresh Salad, Kimchi, White Kimchi, Chive Kimchi.v1i.coco",
+    r".\Data\Pickled Perilla Leaf, Braised Beans, Stir-fried Eggplant, Bracken Salad.v5i.coco"]
+    output_dir = ".\Data\combined_dataset2"
+
+    if os.path.exists(output_dir)==False:
+        os.mkdir(output_dir)
   
     test_dirs = [os.path.join(input_dir,"test") for input_dir in input_dirs]
     os.mkdir(os.path.join(output_dir,"test"))

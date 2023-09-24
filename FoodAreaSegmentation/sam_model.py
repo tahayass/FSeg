@@ -1,8 +1,15 @@
 from segment_anything import sam_model_registry, SamPredictor
 from segment_anything.utils.transforms import ResizeLongestSide
+from postprocessing import close_mask,open_mask
+from utils import format_bbox
 
 import numpy as np
 import torch
+import os
+
+SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
+MODEL_TYPE = "vit_h"
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 def downloadSAMModel():
@@ -86,6 +93,52 @@ def GenerateMaskBatch(sam, images, input_boxes, include_point=True):
     batched_output = sam(batched_input, multimask_output=False)
 
     return batched_output
+
+def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False,kernel_size=None):
+
+    masks=[]
+    #Loading SAM predictor
+    sam_predictor = LoadSAMPredictor(sam_checkpoint=SAM_CHECKPOINT,model_type=MODEL_TYPE,device='cpu')
+
+    #Create SAM embeddings for the image
+    sam_predictor.set_image(image)
+
+    iou_predictions = []
+
+    #Generate mask
+    if len(bounding_boxes) == 1 :
+        input_bbox = np.array(format_bbox(bounding_boxes[0]['bbox']))
+        mask, iou = GenerateMask(sam_predictor,input_box=input_bbox)
+        iou_predictions.append(iou)
+        if open and not(close):
+            mask[0] = open_mask(np.array(mask[0]*1,dtype=np.uint8))
+            masks.append(mask)
+        elif close and not(open):
+            mask[0] = close_mask(np.array(mask[0]*1,dtype=np.uint8))
+            masks.append(mask)
+        elif open and close:
+            mask[0] = close_mask(close_mask(np.array(mask[0]*1,dtype=np.uint8)))
+            masks.append(mask)
+        else:
+            masks.append(mask)
+    elif len(bounding_boxes) > 1 :
+        for i in range(len(bounding_boxes)):
+            input_bbox = np.array(format_bbox(bounding_boxes[i]['bbox']))
+            mask, iou = GenerateMask(sam_predictor,input_box=input_bbox)
+            iou_predictions.append(iou)
+            if open and not(close):
+                mask[0] = open_mask(np.array(mask[0]*1,dtype=np.uint8),kernel_size=kernel_size)
+                masks.append(mask)
+            elif close and not(open):
+                mask[0] = close_mask(np.array(mask[0]*1,dtype=np.uint8),kernel_size=kernel_size)
+                masks.append(mask)
+            elif open and close:
+                mask[0] = open_mask(close_mask(np.array(mask[0]*1,dtype=np.uint8),kernel_size=kernel_size))
+                masks.append(mask)
+            else:
+                masks.append(mask)
+
+    return masks,iou_predictions
 
 
 

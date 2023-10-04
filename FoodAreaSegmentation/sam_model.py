@@ -1,7 +1,7 @@
 from segment_anything import sam_model_registry, SamPredictor
 from segment_anything.utils.transforms import ResizeLongestSide
 from postprocessing import close_mask,open_mask
-from utils import format_bbox
+from FoodAreaSegmentation.utils import format_bbox
 
 import numpy as np
 import torch

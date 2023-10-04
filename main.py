@@ -2,8 +2,20 @@ import torch
 import os
 import cv2
 import numpy as np
-#from FoodAreaSegmentation.sam_model import GenerateMaskForImage
 import sys
+
+# Get the absolute path of the project root directory
+parent_dir = os.path.dirname(os.path.realpath(__file__))
+plate_detection_path = os.path.join(parent_dir,'PlateDetection')
+area_segmentation_path = os.path.join(parent_dir,'FoodAreaSegmentation')
+
+sys.path.append(parent_dir)
+sys.path.append(plate_detection_path)
+sys.path.append(area_segmentation_path)
+
+from FoodAreaSegmentation.sam_model import GenerateMaskForImage
+
+
 from PlateDetection.utils.torch_utils import select_device, smart_inference_mode
 from PlateDetection.utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
                            increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
@@ -15,10 +27,11 @@ import csv
 import platform
 from pathlib import Path
 
-# Get the absolute path of the project root directory
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
 
 # Add the project root directory to the Python path if not already present
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '.'))
+
 if project_root not in sys.path:
     sys.path.append(project_root)
 

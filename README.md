@@ -77,6 +77,24 @@ That's it! You've successfully set up the project on your local machine using Co
 
 ## Usage
 
+To use our project for food detection, follow these steps:
+
+1. **Run the Food Detection Script**: Open your terminal and navigate to the project directory if you're not already there. Then, use the following command to run the food detection script:
+
+    ```bash
+    python main.py --weights PlateDetection/latest_food_detection_model --source path/to/your/test_image.jpg
+    ```
+
+   - `--weights PlateDetection/latest_food_detection_model`: This part of the command specifies the path to the latest model uploaded for food detection. You should replace `PlateDetection/latest_food_detection_model` with the actual path to the model file you want to use.
+   
+   - `--source path/to/your/test_image.jpg`: Here, you should specify the path to the image you want to test for food detection. Replace `path/to/your/test_image.jpg` with the actual path to your test image.
+
+2. **Retrieve Results**: After running the command, relevant information about the detected food items, their locations, and any other details will be displayed in the console. Additionally, the results will be stored in the "PipelineTestResults" directory within your project.
+
+
+That's it! You've successfully used our project to perform food detection on your test image.
+
+
 
 
 ## Example

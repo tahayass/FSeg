@@ -40,6 +40,40 @@ Using the pixel count of the segmentation mask and knowing the dimensions of the
 
 ## Installation
 
+To get started with our project, follow these steps:
+
+1. **Clone the Repository**: Start by cloning this GitHub repository to your local machine using the following command:
+
+    ```bash
+    git clone https://github.com/tahayass/FSeg.git
+    ```
+
+2. **Navigate to the Project Directory**: Change your current directory to the project's root directory:
+
+    ```bash
+    cd FSeg
+    ```
+
+3. **Create a Conda Environment**: We recommend using [Anaconda](https://www.anaconda.com/) for managing Python environments. If you don't have Anaconda installed, you can download and install it from their website.
+
+4. **Set Up the Conda Environment**: Create a Conda environment and install the required dependencies listed in the `environment.yml` file. This file specifies all the necessary packages and their versions for our project:
+
+    ```bash
+    conda env create -f environment.yml
+    ```
+
+   This command will create a Conda environment with the name specified in `environment.yml` and install all the required packages.
+
+5. **Activate the Conda Environment**: Activate the Conda environment to work within it:
+
+    ```bash
+    conda activate FsegEnv
+    ```
+
+
+That's it! You've successfully set up the project on your local machine using Conda. 
+
+
 
 ## Usage
 

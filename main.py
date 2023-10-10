@@ -3,6 +3,7 @@ import os
 import cv2
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 
 # Get the absolute path of the project root directory
 parent_dir = os.path.dirname(os.path.realpath(__file__))
@@ -14,6 +15,7 @@ sys.path.append(plate_detection_path)
 sys.path.append(area_segmentation_path)
 
 from FoodAreaSegmentation.sam_model import GenerateMaskForImage
+from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox
 
 
 from PlateDetection.utils.torch_utils import select_device, smart_inference_mode
@@ -236,6 +238,41 @@ def get_food_bboxes(
     return bboxes, food_types  # Return bboxes and food_types
 
 
+
+def get_food_masks(image,
+                   bboxes,
+                   open=True,
+                   close=True,
+                   kernel_size=None):
+    
+    masks,iou = GenerateMaskForImage(image, bounding_boxes=bboxes,open=open,close=close,kernel_size=kernel_size)
+    
+    return masks,iou
+
+def calculate_surface_area(image,
+                           masks,
+                           bboxes,
+                           food_types):
+    # Create a dictionary to store the sums of masks with the same name
+    mask_dict = {}
+
+    # Iterate over each mask and its corresponding name
+    for mask, name in zip(masks, food_types):
+        if name not in mask_dict:
+            mask_dict[name] = mask*1
+        else:
+            mask_dict[name] += mask*1
+
+    # Create a dictionary to store the count of ones in each array
+    pixel_count = {}
+
+    # Iterate over the dictionary items and sum in each mask
+    for name, summed_mask in mask_dict.items():
+        non_zero_count = np.sum(summed_mask)
+        pixel_count[name] = non_zero_count
+
+    return pixel_count
+
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='PlateDetection/yolov5s.pt', help='model path or triton URL')
@@ -271,69 +308,26 @@ def parse_opt():
     print_args(vars(opt))
     return opt
 
-########## OTHER FUNCTIONS ##########
-'''
-def get_food_masks(image,
-                   bboxes,
-                   open=True,
-                   close=True,
-                   kernel_size=None):
-    
-    masks,_ = GenerateMaskForImage(image, bounding_boxes=bboxes,open=open,close=close,kernel_size=kernel_size)
-    
-    return masks
 
-def calculate_surface_area(image,
-                           masks,
-                           bboxes,
-                           food_types):
-    # Create a dictionary to store the sums of masks with the same name
-    mask_dict = {}
-
-    # Iterate over each mask and its corresponding name
-    for mask, name in zip(masks, food_types):
-        if name not in mask_dict:
-            mask_dict[name] = mask*1
-        else:
-            mask_dict[name] += mask*1
-
-    # Create a dictionary to store the count of ones in each array
-    pixel_count = {}
-
-    # Iterate over the dictionary items and sum in each mask
-    for name, summed_mask in mask_dict.items():
-        non_zero_count = np.sum(summed_mask)
-        pixel_count[name] = non_zero_count
-
-    return pixel_count
-
-'''
 
 def main(opt):
+
     check_requirements('PlateDetection/requirements.txt', exclude=('tensorboard', 'thop'))
     bboxes, food_types = get_food_bboxes(**vars(opt))
-    for bbox, food_type in zip(bboxes, food_types):
-        print("*****************Bounding Boxes:")
-        print(bbox)
-        print("*****************Food Types:")
-        print(food_type)
-    '''
     #Constant variables
     SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
     MODEL_TYPE = "vit_h"
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    #load plate detection model
-    plate_detection_model = None
-
-    #load plate detection model
-    food_detection_model = None
     
-    #Load image
-    image_path = r''
-    image = cv2.imread(image_path)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
+    image = cv2.imread(opt.source)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    #image = cv2.resize(image,(640,640))
+
+
+    '''
+    # Will be used with images that have the normalized plate
     #Detect plate
     center,diameter = get_plate_placement(image,
                         plate_detection_model,
@@ -344,31 +338,35 @@ def main(opt):
                       center,
                       diameter)
     
-    #Detect food and classify them
-    # Replace with the path to your model weights
-    weights = 'C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/bestfood.pt'
-    # Replace with the path to your image
-    source = "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/Combined_dataset_reduced/images/test"
-    bboxes, food_types = get_food_bboxes(weights, source)
-
-    # Print bounding boxes and class names
-    for bbox, food_type in zip(bboxes, food_types):
-        print(f"Food Type: {food_type}, Bounding Box: {bbox}")
-
+    '''
     #Outputs segmentation mask for every food type
+    masks,iou = get_food_masks(image,
+                           bboxes,
+                           open=True,
+                           close=True,
+                           kernel_size=None)
     
-    masks = get_food_masks(image,
-                   bboxes,
-                   open=True,
-                   close=True,
-                   kernel_size=None)
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image)
+    for i,mask in enumerate(masks):
+        print('mask size : ', mask.shape)
+        print('mask pixel count :', np.sum(mask*1))
+        show_mask(mask[0], plt.gca())
+        print(bboxes[0])
+        show_box(format_bbox(bboxes[0]), plt.gca(),iou=iou[i][0],category_name=food_types[i])
+    if os.path.exists(r'./PipelineTestResults') == False:
+        os.mkdir(r'./PipelineTestResults')
+    plt.savefig(os.path.join('.','PipelineTestResults',f'test.jpg'))
+
     
     #Calculates masks pixel count and returns a dictionnary with surface area for every food {'food_type':pixel_count}
     areas = calculate_surface_area(image,
                                    masks,
                                    bboxes,
                                    food_types)
-    '''
+    
+    print(areas)
+
 
 if __name__ == '__main__':
     opt = parse_opt()

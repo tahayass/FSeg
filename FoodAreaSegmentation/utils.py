@@ -18,7 +18,7 @@ def show_points(coords, labels, ax, marker_size=375):
     ax.scatter(pos_points[:, 0], pos_points[:, 1], color='green', marker='*', s=marker_size, edgecolor='white', linewidth=1.25)
     ax.scatter(neg_points[:, 0], neg_points[:, 1], color='red', marker='*', s=marker_size, edgecolor='white', linewidth=1.25)
 
-def show_box(box, iou, ax, category_name=None):
+def show_box(box, ax, iou=0, category_name=None):
     x0, y0 = box[0], box[1]
     w, h = box[2] - box[0], box[3] - box[1]
     ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0,0,0,0), lw=2))
@@ -29,4 +29,4 @@ def show_box(box, iou, ax, category_name=None):
 
 def format_bbox(input_bbox):
     #format the bounding box values to sam model bbox specifications
-    return [input_bbox[0], input_bbox[1], input_bbox[0]+input_bbox[2], input_bbox[1]+input_bbox[3]]
+    return [input_bbox[0]-int(input_bbox[2]/2), input_bbox[1]-int(input_bbox[3]/2), input_bbox[0]+int(input_bbox[2]/2), input_bbox[1]+int(input_bbox[3]/2)]

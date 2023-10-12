@@ -1,7 +1,12 @@
+import sys 
+import os
+
 from segment_anything import sam_model_registry, SamPredictor
 from segment_anything.utils.transforms import ResizeLongestSide
 from postprocessing import close_mask,open_mask
 from FoodAreaSegmentation.utils import format_bbox
+
+
 
 import numpy as np
 import torch
@@ -94,20 +99,29 @@ def GenerateMaskBatch(sam, images, input_boxes, include_point=True):
 
     return batched_output
 
-def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False,kernel_size=None):
-
-    masks=[]
+def prepare_image_embeddings(image):
     #Loading SAM predictor
     sam_predictor = LoadSAMPredictor(sam_checkpoint=SAM_CHECKPOINT,model_type=MODEL_TYPE,device='cpu')
 
     #Create SAM embeddings for the image
     sam_predictor.set_image(image)
 
+    return sam_predictor
+
+def GenerateMaskForImage(sam_predictor, bounding_boxes=[],open=False,close=False,kernel_size=None):
+
+    masks=[]
+
     iou_predictions = []
 
     #Generate mask
     if len(bounding_boxes) == 1 :
-        input_bbox = np.array(format_bbox(bounding_boxes[0]['bbox']))
+
+        if type(bounding_boxes[0]) == dict:
+            input_bbox = np.array(format_bbox(bounding_boxes[0]['bbox']))
+        else:
+            input_bbox = np.array(format_bbox(bounding_boxes[0]))
+
         mask, iou = GenerateMask(sam_predictor,input_box=input_bbox)
         iou_predictions.append(iou)
         if open and not(close):
@@ -123,7 +137,12 @@ def GenerateMaskForImage(image, bounding_boxes=[],open=False,close=False,kernel_
             masks.append(mask)
     elif len(bounding_boxes) > 1 :
         for i in range(len(bounding_boxes)):
-            input_bbox = np.array(format_bbox(bounding_boxes[i]['bbox']))
+
+            if type(bounding_boxes[i]) == dict:
+                input_bbox = np.array(format_bbox(bounding_boxes[i]['bbox']))
+            else:
+                input_bbox = np.array(format_bbox(bounding_boxes[i]))
+
             mask, iou = GenerateMask(sam_predictor,input_box=input_bbox)
             iou_predictions.append(iou)
             if open and not(close):

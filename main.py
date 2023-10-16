@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import time
+from threading import Thread, Event
 
 # Get the absolute path of the project root directory
 parent_dir = os.path.dirname(os.path.realpath(__file__))
@@ -14,7 +16,15 @@ sys.path.append(parent_dir)
 sys.path.append(plate_detection_path)
 sys.path.append(area_segmentation_path)
 
-from FoodAreaSegmentation.sam_model import GenerateMaskForImage
+# Define variables to store the return values
+bboxes_result = None
+embeddings_result = None
+
+# Define events to signal when each thread has finished
+bboxes_done_event = Event()
+embeddings_done_event = Event()
+
+from FoodAreaSegmentation.sam_model import GenerateMaskForImage,prepare_image_embeddings
 from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox
 
 
@@ -239,13 +249,13 @@ def get_food_bboxes(
 
 
 
-def get_food_masks(image,
+def get_food_masks(sam_predictor,
                    bboxes,
                    open=True,
                    close=True,
                    kernel_size=None):
     
-    masks,iou = GenerateMaskForImage(image, bounding_boxes=bboxes,open=open,close=close,kernel_size=kernel_size)
+    masks,iou = GenerateMaskForImage(sam_predictor, bounding_boxes=bboxes,open=open,close=close,kernel_size=kernel_size)
     
     return masks,iou
 
@@ -308,44 +318,58 @@ def parse_opt():
     print_args(vars(opt))
     return opt
 
+def get_food_bboxes_worker(opt):
+    global bboxes_result
+    bboxes_result = get_food_bboxes(**vars(opt))
+    bboxes_done_event.set()
+
+def prepare_image_embeddings_worker(image):
+    global embeddings_result
+    embeddings_result = prepare_image_embeddings(image)
+    embeddings_done_event.set()
+
 
 
 def main(opt):
 
-    check_requirements('PlateDetection/requirements.txt', exclude=('tensorboard', 'thop'))
-    bboxes, food_types = get_food_bboxes(**vars(opt))
     #Constant variables
     SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
     MODEL_TYPE = "vit_h"
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-    
 
     image = cv2.imread(opt.source)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     #image = cv2.resize(image,(640,640))
 
+    check_requirements('PlateDetection/requirements.txt', exclude=('tensorboard', 'thop'))
 
-    '''
-    # Will be used with images that have the normalized plate
-    #Detect plate
-    center,diameter = get_plate_placement(image,
-                        plate_detection_model,
-                        resize=None)
+    # Create two threads to run get_food_bboxes and prepare_image_embeddings concurrently
+    get_bboxes_thread = Thread(target=get_food_bboxes_worker, args=(opt,))
+    prepare_embeddings_thread = Thread(target=prepare_image_embeddings_worker, args=(image,))
+
+    # Start the threads
+    get_bboxes_thread.start()
+    prepare_embeddings_thread.start()
+
+    # Wait for both threads to finish
+    get_bboxes_thread.join()
+    prepare_embeddings_thread.join()
+
+    # Now you can access the return values
+    bboxes_done_event.wait()
+    embeddings_done_event.wait()
+
+    # Access the return values
+    bboxes,food_types = bboxes_result
+    sam_predictor = embeddings_result
     
-    #Remove background of the plate
-    image = remove_background(image,
-                      center,
-                      diameter)
-    
-    '''
-    #Outputs segmentation mask for every food type
-    masks,iou = get_food_masks(image,
+    masks,iou = get_food_masks(sam_predictor,
                            bboxes,
                            open=True,
                            close=True,
                            kernel_size=None)
     
+    #Image visualization
     plt.figure(figsize=(10, 10))
     plt.imshow(image)
     for i,mask in enumerate(masks):
@@ -369,13 +393,21 @@ def main(opt):
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+
     opt = parse_opt()
     main(opt)
 
+    end_time = time.time()
+
+    print('Elapsed time : ', end_time - start_time)
+
     
     
 
     
+
+
 
 
 

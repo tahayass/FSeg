@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import time
+import json
 from threading import Thread, Event
 
 # Get the absolute path of the project root directory
@@ -279,12 +280,12 @@ def calculate_surface_area(image,
     # Iterate over the dictionary items and sum in each mask
     for name, summed_mask in mask_dict.items():
         non_zero_count = np.sum(summed_mask)
-        pixel_count[name] = non_zero_count
+        pixel_count[name] = non_zero_count.item()
 
     return pixel_count
 
 
-def get_food_bboxes_worker():
+def get_food_bboxes_worker(opt):
     global bboxes_result
     bboxes_result = get_food_bboxes(
         weights=opt["weights"],
@@ -325,7 +326,7 @@ def prepare_image_embeddings_worker(image):
 
 
 
-def main(opt):
+def pipeline(opt):
     #Constant variables
     SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
     MODEL_TYPE = "vit_h"
@@ -339,7 +340,7 @@ def main(opt):
 
     # Create two threads to run get_food_bboxes and prepare_image_embeddings concurrently
     #get_bboxes_thread = Thread(target=get_food_bboxes_worker, args=(opt,))
-    get_bboxes_thread = Thread(target=get_food_bboxes_worker)
+    get_bboxes_thread = Thread(target=get_food_bboxes_worker,args=(opt,))
 
     prepare_embeddings_thread = Thread(target=prepare_image_embeddings_worker, args=(image,))
 
@@ -372,7 +373,6 @@ def main(opt):
         print('mask size : ', mask.shape)
         print('mask pixel count :', np.sum(mask*1))
         show_mask(mask[0], plt.gca())
-        print(bboxes[0])
         show_box(format_bbox(bboxes[0]), plt.gca(),iou=iou[i][0],category_name=food_types[i])
     if os.path.exists(r'./PipelineTestResults') == False:
         os.mkdir(r'./PipelineTestResults')
@@ -385,7 +385,7 @@ def main(opt):
                                    bboxes,
                                    food_types)
     
-    print(areas)
+    return areas
 
 
 if __name__ == '__main__':
@@ -393,9 +393,9 @@ if __name__ == '__main__':
     
     # Define Arguments of Food Detection
     opt = {
-        "weights": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/best86yolovm.pt",
-        "source": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/test_dataset/images/test/1accbbf4-19f8-4b9e-aee1-dbee17616eea.jpg",
-        "data": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/data/coco128.yaml",
+        "weights": "./PlateDetection/best86yolovm.pt",
+        "source": "./test_images/1.jpg",
+        "data": "./PlateDetection/data/coco128.yaml",
         "imgsz": (640, 640),
         "conf_thres": 0.25,
         "iou_thres": 0.45,
@@ -412,7 +412,7 @@ if __name__ == '__main__':
         "augment": False,  # augmented inference
         "visualize": False,  # visualize features
         "update": False,  # update all models
-        "project": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/runs/detect",
+        "project": "./PlateDetection/runs/detect",
         "name": "exp",
         "exist_ok": False,  # existing project/name ok, do not increment
         "line_thickness": 3,  # bounding box thickness (pixels)
@@ -422,7 +422,7 @@ if __name__ == '__main__':
         "dnn": False,  # use OpenCV DNN for ONNX inference
         "vid_stride": 1  # video frame-rate stride
     }
-    main(opt)
+    pixel_count = pipeline(opt)
 
     end_time = time.time()
 

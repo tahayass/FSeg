@@ -3,6 +3,8 @@ from PIL import Image
 import os
 import json
 import base64
+from main import pipeline
+
 
 app = FastAPI()
 
@@ -20,6 +22,39 @@ def full_pipeline(input_image):
 
 @app.post("/uploadfile/")
 async def upload_file(file: UploadFile):
+
+    # Define Arguments of Food Detection
+    OPT = {
+        "weights": "./PlateDetection/best86yolovm.pt",
+        "source": os.path.join(upload_dir, file.filename),
+        "data": "./PlateDetection/data/coco128.yaml",
+        "imgsz": (640, 640),
+        "conf_thres": 0.25,
+        "iou_thres": 0.45,
+        "max_det": 1000,
+        "device": '',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
+        "view_img": False,
+        "save_txt": False,
+        "save_csv": False,
+        "save_conf": False,
+        "save_crop": False,
+        "nosave": False,
+        "classes": None,  # filter by class: --class 0, or --class 0 2 3
+        "agnostic_nms": False,  # class-agnostic NMS
+        "augment": False,  # augmented inference
+        "visualize": False,  # visualize features
+        "update": False,  # update all models
+        "project": "./PlateDetection/runs/detect",
+        "name": "exp",
+        "exist_ok": False,  # existing project/name ok, do not increment
+        "line_thickness": 3,  # bounding box thickness (pixels)
+        "hide_labels": False,  # hide labels
+        "hide_conf": False,  # hide confidences
+        "half": False,  # use FP16 half-precision inference
+        "dnn": False,  # use OpenCV DNN for ONNX inference
+        "vid_stride": 1  # video frame-rate stride
+    }
+
     # Save the uploaded file to a temporary location
     with open(os.path.join(upload_dir, file.filename), "wb") as f:
         f.write(file.file.read())
@@ -43,7 +78,7 @@ async def upload_file(file: UploadFile):
     # Create a response JSON that includes the Base64-encoded image, pixel_count, and MIME type
     response_data = {
         "transformed_image": transformed_image_data,
-        "image_info": pixel_count,
+        "image_info": pipeline(OPT),
         "mime_type": mime_type
     }
 

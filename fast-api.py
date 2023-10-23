@@ -3,6 +3,7 @@ from PIL import Image
 import os
 import json
 import base64
+import cv2
 from main import pipeline
 
 
@@ -15,17 +16,13 @@ upload_dir = "uploads"
 if not os.path.exists(upload_dir):
     os.makedirs(upload_dir)
 
-def full_pipeline(input_image):
-    processed_image = Image.open(input_image)
-    pixel_count = {'test': 'test'}
-    return processed_image, pixel_count
 
 @app.post("/uploadfile/")
 async def upload_file(file: UploadFile):
 
     # Define Arguments of Food Detection
     OPT = {
-        "weights": "./PlateDetection/best86yolovm.pt",
+        "weights": "./PlateDetection/bestlastyolovm.pt",
         "source": os.path.join(upload_dir, file.filename),
         "data": "./PlateDetection/data/coco128.yaml",
         "imgsz": (640, 640),
@@ -52,24 +49,23 @@ async def upload_file(file: UploadFile):
         "hide_conf": False,  # hide confidences
         "half": False,  # use FP16 half-precision inference
         "dnn": False,  # use OpenCV DNN for ONNX inference
-        "vid_stride": 1  # video frame-rate stride
+        "vid_stride": 1,  # video frame-rate stride
+        "save": False
     }
 
     # Save the uploaded file to a temporary location
     with open(os.path.join(upload_dir, file.filename), "wb") as f:
         f.write(file.file.read())
 
-    # Transform the image
-    input_image = os.path.join(upload_dir, file.filename)
-    transformed_image, pixel_count = full_pipeline(input_image)
-
-    # Save the transformed image to a temporary location
-    transformed_image_path = os.path.join(upload_dir, "transformed_" + file.filename)
-    transformed_image.save(transformed_image_path)
-
     # Get the MIME type of the image
     extension = os.path.splitext(file.filename)[1].removeprefix('.')
     mime_type = f"image/{extension}" 
+
+    image_info,transformed_image = pipeline(OPT)
+
+    # Save the transformed image to a temporary location
+    transformed_image_path = os.path.join(upload_dir, "transformed_" + file.filename)
+    cv2.imwrite(transformed_image_path, transformed_image)
 
     # Encode the transformed image as Base64
     with open(transformed_image_path, "rb") as img_file:
@@ -78,7 +74,7 @@ async def upload_file(file: UploadFile):
     # Create a response JSON that includes the Base64-encoded image, pixel_count, and MIME type
     response_data = {
         "transformed_image": transformed_image_data,
-        "image_info": pipeline(OPT),
+        "image_info": image_info,
         "mime_type": mime_type
     }
 

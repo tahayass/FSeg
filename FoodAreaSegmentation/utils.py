@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 
 
 
@@ -30,3 +31,42 @@ def show_box(box, ax, iou=0, category_name=None):
 def format_bbox(input_bbox):
     #format the bounding box values to sam model bbox specifications
     return [input_bbox[0]-int(input_bbox[2]/2), input_bbox[1]-int(input_bbox[3]/2), input_bbox[0]+int(input_bbox[2]/2), input_bbox[1]+int(input_bbox[3]/2)]
+
+def show_mask_cv2(mask, image, random_color=False):
+    if random_color:
+        color = np.random.rand(3) * 255
+    else:
+        color = (30, 144, 255)
+
+    mask_image = np.zeros_like(image)
+    mask_image[:, :, 0] = mask * color[0]
+    mask_image[:, :, 1] = mask * color[1]
+    mask_image[:, :, 2] = mask * color[2]
+
+    image = cv2.addWeighted(image, 1, mask_image, 0.2, 0)
+
+    return image
+
+def show_points_cv2(coords, labels, image, marker_size=375):
+    pos_points = coords[labels == 1]
+    neg_points = coords[labels == 0]
+    
+    for point in pos_points:
+        cv2.drawMarker(image, (int(point[0]), int(point[1])), (0, 255, 0), markerType=cv2.MARKER_STAR, markerSize=marker_size, thickness=2, line_type=cv2.LINE_AA)
+    
+    for point in neg_points:
+        cv2.drawMarker(image, (int(point[0]), int(point[1])), (0, 0, 255), markerType=cv2.MARKER_STAR, markerSize=marker_size, thickness=2, line_type=cv2.LINE_AA)
+    
+    return image
+
+def show_box_cv2(box, image, iou=0, category_name=None):
+    x0, y0, x1, y1 = map(int, box)
+    cv2.rectangle(image, (x0, y0), (x1, y1), (0, 255, 0), 2)
+    
+    if category_name is not None:
+        cv2.putText(image, category_name, (x0, y0 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    
+    if iou is not None:
+        cv2.putText(image, f'IoU: {iou:.2f}', (x0, y1 + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+    
+    return image

@@ -26,7 +26,7 @@ bboxes_done_event = Event()
 embeddings_done_event = Event()
 
 from FoodAreaSegmentation.sam_model import GenerateMaskForImage,prepare_image_embeddings
-from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox
+from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox,show_box_cv2,show_mask_cv2
 
 
 from PlateDetection.utils.torch_utils import select_device, smart_inference_mode
@@ -366,17 +366,18 @@ def pipeline(opt):
                            close=True,
                            kernel_size=None)
     
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    
     #Image visualization
-    plt.figure(figsize=(10, 10))
-    plt.imshow(image)
     for i,mask in enumerate(masks):
         print('mask size : ', mask.shape)
         print('mask pixel count :', np.sum(mask*1))
-        show_mask(mask[0], plt.gca())
-        show_box(format_bbox(bboxes[0]), plt.gca(),iou=iou[i][0],category_name=food_types[i])
-    if os.path.exists(r'./PipelineTestResults') == False:
-        os.mkdir(r'./PipelineTestResults')
-    plt.savefig(os.path.join('.','PipelineTestResults',f'test.jpg'))
+        image = show_mask_cv2(mask[0],image)
+        image = show_box_cv2(format_bbox(bboxes[0]), image,iou=iou[i][0],category_name=food_types[i])
+    if opt["save"]:
+        if os.path.exists(r'./PipelineTestResults') == False:
+            os.mkdir(r'./PipelineTestResults')
+        cv2.imwrite(os.path.join('.','PipelineTestResults',f'test.jpg'), image)
 
     
     #Calculates masks pixel count and returns a dictionnary with surface area for every food {'food_type':pixel_count}
@@ -385,7 +386,7 @@ def pipeline(opt):
                                    bboxes,
                                    food_types)
     
-    return areas
+    return areas,image
 
 
 if __name__ == '__main__':
@@ -393,8 +394,8 @@ if __name__ == '__main__':
     
     # Define Arguments of Food Detection
     opt = {
-        "weights": "./PlateDetection/best86yolovm.pt",
-        "source": "./test_images/1.jpg",
+        "weights": "./PlateDetection/bestlastyolovm.pt",
+        "source": "./2.jpg",
         "data": "./PlateDetection/data/coco128.yaml",
         "imgsz": (640, 640),
         "conf_thres": 0.25,
@@ -420,7 +421,8 @@ if __name__ == '__main__':
         "hide_conf": False,  # hide confidences
         "half": False,  # use FP16 half-precision inference
         "dnn": False,  # use OpenCV DNN for ONNX inference
-        "vid_stride": 1  # video frame-rate stride
+        "vid_stride": 1,  # video frame-rate stride
+        "save": True
     }
     pixel_count = pipeline(opt)
 

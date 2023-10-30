@@ -370,10 +370,8 @@ def pipeline(opt):
     
     #Image visualization
     for i,mask in enumerate(masks):
-        print('mask size : ', mask.shape)
-        print('mask pixel count :', np.sum(mask*1))
         image = show_mask_cv2(mask[0],image)
-        image = show_box_cv2(format_bbox(bboxes[0]), image,iou=iou[i][0],category_name=food_types[i])
+        image = show_box_cv2(format_bbox(bboxes[i]), image,iou=iou[i][0],category_name=food_types[i])
     if opt["save"]:
         if os.path.exists(r'./PipelineTestResults') == False:
             os.mkdir(r'./PipelineTestResults')
@@ -394,8 +392,8 @@ if __name__ == '__main__':
     
     # Define Arguments of Food Detection
     opt = {
-        "weights": "./PlateDetection/bestlastyolovm.pt",
-        "source": "./2.jpg",
+        "weights": "./PlateDetection/best86yolovm.pt",
+        "source": "./uploads/set1.jpg",
         "data": "./PlateDetection/data/coco128.yaml",
         "imgsz": (640, 640),
         "conf_thres": 0.25,

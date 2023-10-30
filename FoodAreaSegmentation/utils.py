@@ -36,14 +36,14 @@ def show_mask_cv2(mask, image, random_color=False):
     if random_color:
         color = np.random.rand(3) * 255
     else:
-        color = (30, 144, 255)
+        color = (255, 0, 0)
 
     mask_image = np.zeros_like(image)
     mask_image[:, :, 0] = mask * color[0]
     mask_image[:, :, 1] = mask * color[1]
     mask_image[:, :, 2] = mask * color[2]
 
-    image = cv2.addWeighted(image, 1, mask_image, 0.2, 0)
+    image = cv2.addWeighted(image, 1, mask_image, 0.5, 0)
 
     return image
 
@@ -61,7 +61,7 @@ def show_points_cv2(coords, labels, image, marker_size=375):
 
 def show_box_cv2(box, image, iou=0, category_name=None):
     x0, y0, x1, y1 = map(int, box)
-    cv2.rectangle(image, (x0, y0), (x1, y1), (0, 255, 0), 2)
+    image = cv2.rectangle(image, (x0, y0), (x1, y1), (0, 255, 0), 2)
     
     if category_name is not None:
         cv2.putText(image, category_name, (x0, y0 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)

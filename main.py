@@ -319,18 +319,18 @@ def get_food_bboxes_worker(opt):
     )
     bboxes_done_event.set()
 
-def prepare_image_embeddings_worker(image):
+def prepare_image_embeddings_worker(image,model_type):
     global embeddings_result
-    embeddings_result = prepare_image_embeddings(image)
+    embeddings_result = prepare_image_embeddings(image,model_type)
     embeddings_done_event.set()
 
 
 
 def pipeline(opt):
     #Constant variables
-    SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
-    MODEL_TYPE = "vit_h"
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    #SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
+    #MODEL_TYPE = "vit_h"
+    #DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     image = cv2.imread(opt["source"])
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -342,7 +342,7 @@ def pipeline(opt):
     #get_bboxes_thread = Thread(target=get_food_bboxes_worker, args=(opt,))
     get_bboxes_thread = Thread(target=get_food_bboxes_worker,args=(opt,))
 
-    prepare_embeddings_thread = Thread(target=prepare_image_embeddings_worker, args=(image,))
+    prepare_embeddings_thread = Thread(target=prepare_image_embeddings_worker, args=(image,opt["segmentation_model_type"]))
 
     # Start the threads
     get_bboxes_thread.start()
@@ -393,6 +393,7 @@ if __name__ == '__main__':
     # Define Arguments of Food Detection
     opt = {
         "weights": "./PlateDetection/best86yolovm.pt",
+        "segmentation_model_type": "vit_b",
         "source": "./uploads/set1.jpg",
         "data": "./PlateDetection/data/coco128.yaml",
         "imgsz": (640, 640),

@@ -12,8 +12,6 @@ import numpy as np
 import torch
 import os
 
-SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
-MODEL_TYPE = "vit_h"
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -99,9 +97,18 @@ def GenerateMaskBatch(sam, images, input_boxes, include_point=True):
 
     return batched_output
 
-def prepare_image_embeddings(image):
+def prepare_image_embeddings(image,model_type):
+
+    #infere model checkpoint path
+    if model_type == "vit_b":
+        sam_checkpoint = os.path.join('.','FoodAreaSegmentation','sam_vit_b_01ec64.pth')
+    elif model_type == "vit_l":
+        sam_checkpoint = os.path.join('.','FoodAreaSegmentation','sam_vit_l_0b3195.pth')
+    elif model_type == "vit_h":
+        sam_checkpoint = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
+
     #Loading SAM predictor
-    sam_predictor = LoadSAMPredictor(sam_checkpoint=SAM_CHECKPOINT,model_type=MODEL_TYPE,device='cpu')
+    sam_predictor = LoadSAMPredictor(sam_checkpoint=sam_checkpoint,model_type=model_type,device='cpu')
 
     #Create SAM embeddings for the image
     sam_predictor.set_image(image)

@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import time
+import json
 from threading import Thread, Event
 
 # Get the absolute path of the project root directory
@@ -25,7 +26,7 @@ bboxes_done_event = Event()
 embeddings_done_event = Event()
 
 from FoodAreaSegmentation.sam_model import GenerateMaskForImage,prepare_image_embeddings
-from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox
+from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox,show_box_cv2,show_mask_cv2
 
 
 from PlateDetection.utils.torch_utils import select_device, smart_inference_mode
@@ -279,12 +280,12 @@ def calculate_surface_area(image,
     # Iterate over the dictionary items and sum in each mask
     for name, summed_mask in mask_dict.items():
         non_zero_count = np.sum(summed_mask)
-        pixel_count[name] = non_zero_count
+        pixel_count[name] = non_zero_count.item()
 
     return pixel_count
 
 
-def get_food_bboxes_worker():
+def get_food_bboxes_worker(opt):
     global bboxes_result
     bboxes_result = get_food_bboxes(
         weights=opt["weights"],
@@ -318,18 +319,18 @@ def get_food_bboxes_worker():
     )
     bboxes_done_event.set()
 
-def prepare_image_embeddings_worker(image):
+def prepare_image_embeddings_worker(image,model_type):
     global embeddings_result
-    embeddings_result = prepare_image_embeddings(image)
+    embeddings_result = prepare_image_embeddings(image,model_type)
     embeddings_done_event.set()
 
 
 
-def main(opt):
+def pipeline(opt):
     #Constant variables
-    SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
-    MODEL_TYPE = "vit_h"
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    #SAM_CHECKPOINT = os.path.join('.','FoodAreaSegmentation','sam_vit_h_4b8939.pth')
+    #MODEL_TYPE = "vit_h"
+    #DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     image = cv2.imread(opt["source"])
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -339,9 +340,9 @@ def main(opt):
 
     # Create two threads to run get_food_bboxes and prepare_image_embeddings concurrently
     #get_bboxes_thread = Thread(target=get_food_bboxes_worker, args=(opt,))
-    get_bboxes_thread = Thread(target=get_food_bboxes_worker)
+    get_bboxes_thread = Thread(target=get_food_bboxes_worker,args=(opt,))
 
-    prepare_embeddings_thread = Thread(target=prepare_image_embeddings_worker, args=(image,))
+    prepare_embeddings_thread = Thread(target=prepare_image_embeddings_worker, args=(image,opt["segmentation_model_type"]))
 
     # Start the threads
     get_bboxes_thread.start()
@@ -365,18 +366,16 @@ def main(opt):
                            close=True,
                            kernel_size=None)
     
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    
     #Image visualization
-    plt.figure(figsize=(10, 10))
-    plt.imshow(image)
     for i,mask in enumerate(masks):
-        print('mask size : ', mask.shape)
-        print('mask pixel count :', np.sum(mask*1))
-        show_mask(mask[0], plt.gca())
-        print(bboxes[0])
-        show_box(format_bbox(bboxes[0]), plt.gca(),iou=iou[i][0],category_name=food_types[i])
-    if os.path.exists(r'./PipelineTestResults') == False:
-        os.mkdir(r'./PipelineTestResults')
-    plt.savefig(os.path.join('.','PipelineTestResults',f'test.jpg'))
+        image = show_mask_cv2(mask[0],image)
+        image = show_box_cv2(format_bbox(bboxes[i]), image,iou=iou[i][0],category_name=food_types[i])
+    if opt["save"]:
+        if os.path.exists(r'./PipelineTestResults') == False:
+            os.mkdir(r'./PipelineTestResults')
+        cv2.imwrite(os.path.join('.','PipelineTestResults',f'test.jpg'), image)
 
     
     #Calculates masks pixel count and returns a dictionnary with surface area for every food {'food_type':pixel_count}
@@ -385,7 +384,7 @@ def main(opt):
                                    bboxes,
                                    food_types)
     
-    print(areas)
+    return areas,image
 
 
 if __name__ == '__main__':
@@ -393,9 +392,10 @@ if __name__ == '__main__':
     
     # Define Arguments of Food Detection
     opt = {
-        "weights": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/best86yolovm.pt",
-        "source": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/test_dataset/images/test/1accbbf4-19f8-4b9e-aee1-dbee17616eea.jpg",
-        "data": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/data/coco128.yaml",
+        "weights": "./PlateDetection/best86yolovm.pt",
+        "segmentation_model_type": "vit_b",
+        "source": "./uploads/set1.jpg",
+        "data": "./PlateDetection/data/coco128.yaml",
         "imgsz": (640, 640),
         "conf_thres": 0.25,
         "iou_thres": 0.45,
@@ -412,7 +412,7 @@ if __name__ == '__main__':
         "augment": False,  # augmented inference
         "visualize": False,  # visualize features
         "update": False,  # update all models
-        "project": "C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/runs/detect",
+        "project": "./PlateDetection/runs/detect",
         "name": "exp",
         "exist_ok": False,  # existing project/name ok, do not increment
         "line_thickness": 3,  # bounding box thickness (pixels)
@@ -420,9 +420,10 @@ if __name__ == '__main__':
         "hide_conf": False,  # hide confidences
         "half": False,  # use FP16 half-precision inference
         "dnn": False,  # use OpenCV DNN for ONNX inference
-        "vid_stride": 1  # video frame-rate stride
+        "vid_stride": 1,  # video frame-rate stride
+        "save": True
     }
-    main(opt)
+    pixel_count = pipeline(opt)
 
     end_time = time.time()
 

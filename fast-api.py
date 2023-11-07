@@ -23,6 +23,7 @@ async def upload_file(file: UploadFile):
     # Define Arguments of Food Detection
     OPT = {
         "weights": "./PlateDetection/bestlastyolovm.pt",
+        "segmentation_model_type": "vit_b",
         "source": os.path.join(upload_dir, file.filename),
         "data": "./PlateDetection/data/coco128.yaml",
         "imgsz": (640, 640),
@@ -61,7 +62,7 @@ async def upload_file(file: UploadFile):
     extension = os.path.splitext(file.filename)[1].removeprefix('.')
     mime_type = f"image/{extension}" 
 
-    image_info,transformed_image = pipeline(OPT)
+    pixel_count_dict,bbox_dict,transformed_image = pipeline(OPT)
 
     # Save the transformed image to a temporary location
     transformed_image_path = os.path.join(upload_dir, "transformed_" + file.filename)
@@ -74,7 +75,14 @@ async def upload_file(file: UploadFile):
     # Create a response JSON that includes the Base64-encoded image, pixel_count, and MIME type
     response_data = {
         "transformed_image": transformed_image_data,
-        "image_info": image_info,
+        "plate_food" : {
+            "bounding_boxes": bbox_dict,
+            "pixel_count": pixel_count_dict
+        },
+        "packaged_food": {
+            "bounding_boxes": []
+        },
+            
         "mime_type": mime_type
     }
 

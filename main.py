@@ -266,6 +266,14 @@ def calculate_surface_area(image,
                            food_types):
     # Create a dictionary to store the sums of masks with the same name
     mask_dict = {}
+    bbox_dict = {}
+
+    # Iterate over each bbox and its corresponding name
+    for bbox, name in zip(bboxes, food_types):
+        if name not in bbox_dict:
+            bbox_dict[name] = [bbox]
+        else: 
+            bbox_dict[name].append(bbox)
 
     # Iterate over each mask and its corresponding name
     for mask, name in zip(masks, food_types):
@@ -282,7 +290,7 @@ def calculate_surface_area(image,
         non_zero_count = np.sum(summed_mask)
         pixel_count[name] = non_zero_count.item()
 
-    return pixel_count
+    return pixel_count, bbox_dict
 
 
 def get_food_bboxes_worker(opt):
@@ -379,12 +387,12 @@ def pipeline(opt):
 
     
     #Calculates masks pixel count and returns a dictionnary with surface area for every food {'food_type':pixel_count}
-    areas = calculate_surface_area(image,
+    pixel_count_dict, bbox_dict = calculate_surface_area(image,
                                    masks,
                                    bboxes,
                                    food_types)
     
-    return areas,image
+    return pixel_count_dict,bbox_dict,image
 
 
 if __name__ == '__main__':
@@ -392,7 +400,7 @@ if __name__ == '__main__':
     
     # Define Arguments of Food Detection
     opt = {
-        "weights": "./PlateDetection/best86yolovm.pt",
+        "weights": "./PlateDetection/bestnewdataset.pt",
         "segmentation_model_type": "vit_b",
         "source": "./uploads/set1.jpg",
         "data": "./PlateDetection/data/coco128.yaml",
@@ -423,7 +431,8 @@ if __name__ == '__main__':
         "vid_stride": 1,  # video frame-rate stride
         "save": True
     }
-    pixel_count = pipeline(opt)
+
+    pixel_count_dict,bbox_dict,_ = pipeline(opt)
 
     end_time = time.time()
 

@@ -24,6 +24,7 @@ embeddings_result = None
 # Define events to signal when each thread has finished
 bboxes_done_event = Event()
 embeddings_done_event = Event()
+packaged_bboxes_done_event = Event()
 
 from FoodAreaSegmentation.sam_model import GenerateMaskForImage,prepare_image_embeddings
 from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox,show_box_cv2,show_mask_cv2
@@ -251,9 +252,9 @@ def get_food_bboxes(
 
 @smart_inference_mode()
 def get_packaged_food_bboxes(
-        weights='C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/best5food.pt',  # model path or triton URL
-        source='C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/test_images',  # file/dir/URL/glob/screen/0(webcam)
-        data='C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/data/types5food.yaml',  # dataset.yaml path
+        weights='./PlateDetection/best5food.pt', 
+        source='./PlateDetection/test_images',  
+        data='./PlateDetection/data/types5food.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
         conf_thres=0.25,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
@@ -270,7 +271,7 @@ def get_packaged_food_bboxes(
         augment=False,  # augmented inference
         visualize=False,  # visualize features
         update=False,  # update all models
-        project='C:/Users/Sarah Benabdallah/Documents/GitHub/FSeg/PlateDetection/runs/detect',  # save results to project/name
+        project='./FSeg/PlateDetection/runs/detect',  # save results to project/name
         name='exp',  # save results to project/name
         exist_ok=False,  # existing project/name ok, do not increment
         line_thickness=3,  # bounding box thickness (pixels)
@@ -455,20 +456,11 @@ def get_food_masks(sam_predictor,
     
     return masks,iou
 
-def calculate_surface_area(image,
-                           masks,
-                           bboxes,
+def calculate_surface_area(masks,
                            food_types):
+    
     # Create a dictionary to store the sums of masks with the same name
     mask_dict = {}
-    bbox_dict = {}
-
-    # Iterate over each bbox and its corresponding name
-    for bbox, name in zip(bboxes, food_types):
-        if name not in bbox_dict:
-            bbox_dict[name] = [bbox]
-        else: 
-            bbox_dict[name].append(bbox)
 
     # Iterate over each mask and its corresponding name
     for mask, name in zip(masks, food_types):
@@ -485,7 +477,7 @@ def calculate_surface_area(image,
         non_zero_count = np.sum(summed_mask)
         pixel_count[name] = non_zero_count.item()
 
-    return pixel_count, bbox_dict
+    return pixel_count
 
 
 def get_food_bboxes_worker(opt):
@@ -529,8 +521,8 @@ def prepare_image_embeddings_worker(image,model_type):
 
 
 def get_packaged_food_bboxes_worker(opt):
-    global bboxes_result
-    bboxes_result = get_packaged_food_bboxes(
+    global packaged_bboxes_result
+    packaged_bboxes_result = get_packaged_food_bboxes(
         weights=opt["weights_packagedfood"],
         source=opt["source"],
         data=opt["data"],
@@ -560,7 +552,7 @@ def get_packaged_food_bboxes_worker(opt):
         dnn=opt["dnn"],
         vid_stride=opt["vid_stride"]
     )
-    bboxes_done_event.set()
+    packaged_bboxes_done_event.set()
 
 
 
@@ -579,36 +571,56 @@ def pipeline(opt):
     # Create two threads to run get_food_bboxes and prepare_image_embeddings concurrently
     #get_bboxes_thread = Thread(target=get_food_bboxes_worker, args=(opt,))
     get_bboxes_thread = Thread(target=get_food_bboxes_worker,args=(opt,))
+    get_packaged_bboxes_thread = Thread(target=get_packaged_food_bboxes_worker,args=(opt,))
     prepare_embeddings_thread = Thread(target=prepare_image_embeddings_worker, args=(image,opt["segmentation_model_type"]))
 
     # Start the threads
     get_bboxes_thread.start()
     prepare_embeddings_thread.start()
+    get_packaged_bboxes_thread.start()
 
     # Wait for both threads to finish
     get_bboxes_thread.join()
     prepare_embeddings_thread.join()
+    get_packaged_bboxes_thread.join()
 
     # Now you can access the return values
     bboxes_done_event.wait()
     embeddings_done_event.wait()
+    packaged_bboxes_done_event.wait()
 
     # Access the return values
     bboxes,food_types = bboxes_result
     sam_predictor = embeddings_result
+    packaged_bboxes,packaged_food_types = packaged_bboxes_result
     
-    masks,iou = get_food_masks(sam_predictor,
-                           bboxes,
-                           open=True,
-                           close=True,
-                           kernel_size=None)
+    if len(bboxes) != 0 :
+        masks,iou = get_food_masks(sam_predictor,
+                            bboxes,
+                            open=True,
+                            close=True,
+                            kernel_size=None)
+    else : 
+        masks = None
+        iou = None
     
+    print(masks)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
     #Image visualization
-    for i,mask in enumerate(masks):
-        image = show_mask_cv2(mask[0],image)
-        image = show_box_cv2(format_bbox(bboxes[i]), image,iou=iou[i][0],category_name=food_types[i])
+    if masks:
+        for i,mask in enumerate(masks):
+            image = show_mask_cv2(mask[0],image)
+
+    for i,bbox in enumerate(bboxes):
+        if masks:
+            image = show_box_cv2(format_bbox(bbox), image,iou=iou[i][0],category_name=food_types[i])
+        else:
+            image = show_box_cv2(format_bbox(bbox), image,iou=None,category_name=food_types[i])
+
+    for i,bbox in enumerate(packaged_bboxes):
+        image = show_box_cv2(format_bbox(bbox), image,iou=None,category_name=packaged_food_types[i])
+
     if opt["save"]:
         if os.path.exists(r'./PipelineTestResults') == False:
             os.mkdir(r'./PipelineTestResults')
@@ -616,12 +628,31 @@ def pipeline(opt):
 
     
     #Calculates masks pixel count and returns a dictionnary with surface area for every food {'food_type':pixel_count}
-    pixel_count_dict, bbox_dict = calculate_surface_area(image,
-                                   masks,
-                                   bboxes,
-                                   food_types)
+    if masks :
+        pixel_count_dict = calculate_surface_area(
+                                    masks,
+                                    food_types)
+    else:
+        pixel_count_dict = {}
     
-    return pixel_count_dict,bbox_dict,image
+    bbox_dict = {}
+    packaged_bbox_dict = {}
+
+    # Iterate over each bbox and its corresponding name
+    for bbox, name in zip(bboxes, food_types):
+        if name not in bbox_dict:
+            bbox_dict[name] = [bbox]
+        else: 
+            bbox_dict[name].append(bbox)
+
+    # Iterate over each bbox and its corresponding name
+    for bbox, name in zip(packaged_bboxes, packaged_food_types):
+        if name not in packaged_bbox_dict:
+            packaged_bbox_dict[name] = [bbox]
+        else: 
+            packaged_bbox_dict[name].append(bbox)
+    
+    return pixel_count_dict,bbox_dict,packaged_bbox_dict,image
 
 
 if __name__ == '__main__':
@@ -662,7 +693,7 @@ if __name__ == '__main__':
         "save": True
     }
 
-    pixel_count_dict,bbox_dict,_ = pipeline(opt)
+    pixel_count_dict,bbox_dict,packaged_bbox_dict,_ = pipeline(opt)
 
     end_time = time.time()
 

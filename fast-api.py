@@ -22,7 +22,8 @@ async def upload_file(file: UploadFile):
 
     # Define Arguments of Food Detection
     OPT = {
-        "weights": "./PlateDetection/bestlastyolovm.pt",
+        "weights": "./PlateDetection/bestnewdataset.pt",
+        "weights_packagedfood" : "./PlateDetection/best5food.pt",
         "segmentation_model_type": "vit_b",
         "source": os.path.join(upload_dir, file.filename),
         "data": "./PlateDetection/data/coco128.yaml",
@@ -62,7 +63,7 @@ async def upload_file(file: UploadFile):
     extension = os.path.splitext(file.filename)[1].removeprefix('.')
     mime_type = f"image/{extension}" 
 
-    pixel_count_dict,bbox_dict,transformed_image = pipeline(OPT)
+    pixel_count_dict,bbox_dict,packaged_bbox_dict,transformed_image = pipeline(OPT)
 
     # Save the transformed image to a temporary location
     transformed_image_path = os.path.join(upload_dir, "transformed_" + file.filename)
@@ -80,7 +81,7 @@ async def upload_file(file: UploadFile):
             "pixel_count": pixel_count_dict
         },
         "packaged_food": {
-            "bounding_boxes": []
+            "bounding_boxes": packaged_bbox_dict
         },
             
         "mime_type": mime_type

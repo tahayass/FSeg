@@ -1,0 +1,11 @@
+train: ../drinks_dataset/images/train
+val: ../drinks_dataset/images/valid 
+test: ../drinks_dataset/images/test 
+
+nc: 3
+
+# Classes
+names:
+  0: cocacola
+  1: pepsi
+  2: sprite

@@ -1,0 +1,12 @@
+train: ../types5food/images/train
+val: ../types5food/images/valid 
+test: ../types5food/images/test 
+
+nc: 5
+# Classes
+names:
+  0: cocacola
+  1: seoul milk
+  2: snickers
+  3: spicy Jolbyeong
+  4: strongman sausage

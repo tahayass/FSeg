@@ -604,7 +604,6 @@ def pipeline(opt):
         masks = None
         iou = None
     
-    print(masks)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
     #Image visualization

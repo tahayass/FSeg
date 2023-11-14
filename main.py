@@ -31,7 +31,7 @@ from FoodAreaSegmentation.utils import show_box,show_mask,format_bbox,show_box_c
 
 
 from PlateDetection.utils.torch_utils import select_device, smart_inference_mode
-from PlateDetection.utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
+from PlateDetection.utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, colorstr, cv2,
                            increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
 from PlateDetection.utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadScreenshots, LoadStreams
 from PlateDetection.models.common import DetectMultiBackend
@@ -564,10 +564,6 @@ def pipeline(opt):
 
     image = cv2.imread(opt["source"])
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    #image = cv2.resize(image,(640,640))
-
-    check_requirements('PlateDetection/requirements.txt', exclude=('tensorboard', 'thop'))
-
     # Create two threads to run get_food_bboxes and prepare_image_embeddings concurrently
     #get_bboxes_thread = Thread(target=get_food_bboxes_worker, args=(opt,))
     get_bboxes_thread = Thread(target=get_food_bboxes_worker,args=(opt,))

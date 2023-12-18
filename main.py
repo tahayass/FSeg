@@ -572,17 +572,20 @@ def pipeline(opt):
 
     # Start the threads
     get_bboxes_thread.start()
-    prepare_embeddings_thread.start()
+    if opt["segment"]:
+        prepare_embeddings_thread.start()
     get_packaged_bboxes_thread.start()
 
     # Wait for both threads to finish
     get_bboxes_thread.join()
-    prepare_embeddings_thread.join()
+    if opt["segment"]:
+        prepare_embeddings_thread.join()
     get_packaged_bboxes_thread.join()
 
     # Now you can access the return values
     bboxes_done_event.wait()
-    embeddings_done_event.wait()
+    if opt["segment"]:
+        embeddings_done_event.wait()
     packaged_bboxes_done_event.wait()
 
     # Access the return values
@@ -590,7 +593,7 @@ def pipeline(opt):
     sam_predictor = embeddings_result
     packaged_bboxes,packaged_food_types = packaged_bboxes_result
     
-    if len(bboxes) != 0 :
+    if (len(bboxes) != 0) & opt["segment"]:
         masks,iou = get_food_masks(sam_predictor,
                             bboxes,
                             open=True,
@@ -660,6 +663,7 @@ if __name__ == '__main__':
         "segmentation_model_type": "vit_b",
         "source": "./uploads/set1.jpg",
         "data": "./PlateDetection/data/coco128.yaml",
+        "segment": True,
         "imgsz": (640, 640),
         "conf_thres": 0.25,
         "iou_thres": 0.45,
